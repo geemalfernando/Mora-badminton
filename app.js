@@ -27,17 +27,33 @@ const allowedOrigins = corsOriginRaw
   .map((o) => o.trim())
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.length === 0) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
-  })
-);
-app.options("*", cors());
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.length === 0) return true;
+  if (allowedOrigins.includes("*")) return true;
+  if (allowedOrigins.includes(origin)) return true;
+
+  // Support simple wildcards, e.g. https://*.web.app or *.firebaseapp.com
+  for (const pattern of allowedOrigins) {
+    if (!pattern.includes("*")) continue;
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`^${escaped.replace(/\\\*/g, ".*")}$`);
+    if (regex.test(origin)) return true;
+  }
+
+  return false;
+}
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 const apiPrefix = process.env.API_PREFIX || "/api";
 
@@ -66,4 +82,3 @@ app.get(`${apiPrefix}/`, (_req, res) => res.send("UMiSF API Started"));
 app.get("/", (_req, res) => res.send("UMiSF API Started"));
 
 module.exports = app;
-
