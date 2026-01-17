@@ -58,22 +58,35 @@ const updatePlayer = async (req, res) => {
 
 const getPlayerByObjectId = async (req, res) => {
 
-  let { ids} = req?.query;
- console.log("IDs: ", ids)
-  //console.log("IDs: ", ids)
-//  //check whether valid object ids
-  const validations = ids.filter((value)=> {return databaseWrapper.isValidObjectId(value) == false})
-  if (validations.length === 0) {
-    
-    const player = await databaseWrapper.read("player", res, ['_id'], [ids]);
-    if (player.data == null || player.data.length == 0) {
-      return res.status(400).send({ message:"Invalid Player ID. Register as a player first"});
-    } else {
-      return res.status(201).send({ message: player.message, data: player.data });
-    }
-  } else {
-    return res.status(400).send({ message:"Invalid ID included "});
+  const idsRaw = req?.query?.ids;
+  console.log("IDs: ", idsRaw);
+
+  if (!idsRaw) {
+    return res.status(400).send({ message: "ids query param is required" });
   }
+
+  const ids = Array.isArray(idsRaw)
+    ? idsRaw
+    : String(idsRaw)
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+
+  if (ids.length === 0) {
+    return res.status(400).send({ message: "ids query param is required" });
+  }
+
+  const invalid = ids.filter((value) => databaseWrapper.isValidObjectId(value) === false);
+  if (invalid.length !== 0) {
+    return res.status(400).send({ message: "Invalid ID included" });
+  }
+
+  const player = await databaseWrapper.read("player", res, ["_id"], [ids]);
+  if (player?.data == null || player.data.length === 0) {
+    return res.status(400).send({ message: "Invalid Player ID. Register as a player first" });
+  }
+
+  return res.status(201).send({ message: player.message, data: player.data });
 };
 
 const getFilteredData = async (req, res) => {
