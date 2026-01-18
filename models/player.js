@@ -60,6 +60,9 @@ const playerSchema = new Schema({
   email: {
     type: String,
   },
+  registrationNumber: {
+    type: String,
+  },
   photo: {
     type: String,
   },

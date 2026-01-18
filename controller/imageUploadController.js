@@ -28,7 +28,14 @@ const uploadImage = async (req,res) => {
 
 const uploadMultipleFiles = async (req,res) => {
     console.log('uploading multiple files...');
-    const {images,playerIds,slip,companyId} = req?.body;
+    const {
+        images,
+        playerIds,
+        slip,
+        companyId,
+        entityId,
+        entityType
+    } = req?.body;
     
     if(!images || !playerIds ){
         return res.status(400).send({message: "required fields are not set"});
@@ -67,17 +74,30 @@ const uploadMultipleFiles = async (req,res) => {
         if(!slip){
             return res.status(200).send({message: 'photo uploaded successfully'});
         }
+
+        const targetId = entityId || companyId;
+        if (!targetId) {
+            return res.status(400).send({ message: "entityId is required when slip is provided" });
+        }
         
         const slipTimestamp = new Date().getTime();
         const slipRandomString = Math.random().toString(36).substring(2, 8);
-        const slipHashString = companyId + '_' + slipTimestamp +  slipRandomString;
-        const slipUrl = await uploadFile('payment_slips',slip,slipHashString)
-        const slipUpdate = await databaseWrapper.updateWithoutReturn("company", "_id", companyId, {paymentSlip: slipUrl});
+        const slipHashString = targetId + '_' + slipTimestamp +  slipRandomString;
+        const slipUrl = await uploadFile('payment_slips', slip, slipHashString);
+
+        const normalizedType = String(entityType || 'company').toLowerCase();
+        const primaryCollection = normalizedType === 'university' ? 'university' : 'company';
+        const secondaryCollection = primaryCollection === 'company' ? 'university' : 'company';
+
+        let slipUpdate = await databaseWrapper.updateWithoutReturn(primaryCollection, "_id", targetId, { paymentSlip: slipUrl });
+        if (!slipUpdate && !entityType) {
+            slipUpdate = await databaseWrapper.updateWithoutReturn(secondaryCollection, "_id", targetId, { paymentSlip: slipUrl });
+        }
+
         if(!slipUpdate) {
-            return res.status(400).send({msg:'internal server error'});
-        }else{
-            return res.status(200).send({message: 'photo uploaded successfully'});
-        }   
+            return res.status(400).send({msg:'internal server error', message: 'Could not attach payment slip'});
+        }
+        return res.status(200).send({message: 'photo uploaded successfully'});
     }catch(e){
         console.log('error',e);
         return res.status(400).send({msg:'internal server error', error: e.message});

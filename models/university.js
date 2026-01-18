@@ -6,6 +6,9 @@ const universitySchema = new Schema({
     type: String,
     required: true,
   },
+  teamName: {
+    type: String,
+  },
   matchType: {
     type: String,
     required: true,
@@ -16,6 +19,15 @@ const universitySchema = new Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Player',
       required: true,
+    },
+  ],
+  teamMembers: [
+    {
+      fullName: { type: String },
+      firstName: { type: String },
+      lastName: { type: String },
+      contactNumber: { type: String },
+      registrationNumber: { type: String },
     },
   ],
   paymentMethod: {

@@ -3,8 +3,35 @@ const databaseWrapper = require('../database/databaseWrapper');
 const addUniversity = async (req, res) => {
   //TODO: email the IDs
   try {
-    const { universityDetails, players } = req?.body;
-    return await databaseWrapper.atomicDualCreate({ name: 'player', data: players }, { name: 'university', data: universityDetails }, 'players', res);
+    const { universityDetails: rawUniversityDetails, players } = req?.body;
+
+    if (!rawUniversityDetails || !Array.isArray(players)) {
+      return res.status(400).send({ message: 'required data not filled' });
+    }
+
+    const universityDetails = { ...rawUniversityDetails };
+
+    if (!Array.isArray(universityDetails.teamMembers) || universityDetails.teamMembers.length === 0) {
+      universityDetails.teamMembers = players.map((p) => {
+        const firstName = p?.firstName ? String(p.firstName) : '';
+        const lastName = p?.lastName ? String(p.lastName) : '';
+        const fullName = `${firstName} ${lastName}`.trim();
+        return {
+          fullName,
+          firstName,
+          lastName,
+          contactNumber: p?.contactNumber ? String(p.contactNumber) : '',
+          registrationNumber: p?.registrationNumber ? String(p.registrationNumber) : '',
+        };
+      });
+    }
+
+    return await databaseWrapper.atomicDualCreate(
+      { name: 'player', data: players },
+      { name: 'university', data: universityDetails },
+      'players',
+      res
+    );
   } catch (error) {
     console.log('Error adding university', error);
     return res.status(500).send('Internal Server Error');
