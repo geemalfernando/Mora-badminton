@@ -21,6 +21,7 @@ const addUniversity = async (req, res) => {
           firstName,
           lastName,
           contactNumber: p?.contactNumber ? String(p.contactNumber) : '',
+          nicNumber: p?.nicNumber ? String(p.nicNumber) : '',
           registrationNumber: p?.registrationNumber ? String(p.registrationNumber) : '',
         };
       });

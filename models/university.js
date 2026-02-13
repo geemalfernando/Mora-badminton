@@ -27,6 +27,7 @@ const universitySchema = new Schema({
       firstName: { type: String },
       lastName: { type: String },
       contactNumber: { type: String },
+      nicNumber: { type: String },
       registrationNumber: { type: String },
     },
   ],
