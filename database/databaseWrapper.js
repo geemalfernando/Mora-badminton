@@ -37,10 +37,17 @@ const schemas = {
 
 const add = async (collectionName, data, res) => {
   try {
-    const dbResponse = await schemas[collectionName].create(data);
+    const Model = schemas[collectionName];
+    if (!Model) {
+      console.error('[databaseWrapper.add] unknown collection:', collectionName);
+      return res.status(500).send({ message: 'Server error', error: 'Unknown collection' });
+    }
+    const dbResponse = await Model.create(data);
     return res.status(201).send({ message: 'New Data has been added', data: dbResponse });
   } catch (e) {
-    res.status(500).send({ message: 'Server error', error: e });
+    console.error('[databaseWrapper.add]', collectionName, e?.message || e);
+    const errMsg = e?.message || (e?.errors ? JSON.stringify(e.errors) : String(e));
+    res.status(500).send({ message: 'Server error', error: errMsg });
   }
 };
 

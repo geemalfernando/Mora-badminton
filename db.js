@@ -16,6 +16,11 @@ function getMongoConfigFromEnv() {
   return { uri, dbName: dbName || legacyDbName };
 }
 
+function maskUri(uri) {
+  if (!uri || typeof uri !== "string") return "(not set)";
+  return uri.replace(/:[^:@/]+@/, ":****@");
+}
+
 async function initDb() {
   // Requiring model files registers mongoose models and schemas.
   require("./models/player");
@@ -44,7 +49,11 @@ async function connectToDatabase() {
   if (cached.conn) return cached.conn;
 
   const { uri, dbName } = getMongoConfigFromEnv();
-  if (!uri) throw new Error("DATABASE_URL (or CONNECTION_STRING) is required");
+  if (!uri) {
+    console.error("DATABASE_URL (or CONNECTION_STRING) is not set. Set it in Render Dashboard → Environment.");
+    throw new Error("DATABASE_URL (or CONNECTION_STRING) is required");
+  }
+  console.log("Connecting to MongoDB:", maskUri(uri), dbName ? `dbName=${dbName}` : "");
 
   if (!cached.promise) {
     cached.promise = mongoose
