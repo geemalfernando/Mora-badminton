@@ -16,7 +16,20 @@ const imageUploadRouter = require("./router/imageUploadRouter");
 const app = express();
 app.disable("x-powered-by");
 
-// Allow all origins so frontend (e.g. Render) can call the API
+// CORS: allow any origin (Firebase umisf-4778c.web.app, Render frontend, etc.)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
+});
+
 app.use(
   cors({
     origin: true,
